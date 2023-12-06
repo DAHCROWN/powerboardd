@@ -1,95 +1,181 @@
+"use client"
 import Image from 'next/image'
 import styles from './page.module.css'
+import { useState } from 'react';
+import React from 'react';
+import {
+  Chart as ChartJS,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Scatter } from 'react-chartjs-2';
+import { faker } from '@faker-js/faker';
+import { redirect } from 'next/dist/server/api-utils';
+import { useRouter } from 'next/navigation'
 
-export default function Home() {
+
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { formatEther } from "viem/utils";
+import { useAccount, useBalance, useContractRead } from "wagmi";
+import { readContract, waitForTransaction, writeContract } from "wagmi/actions";
+
+export default function Home() {  
+  //init wallet 
+  const { address, isConnected } = useAccount();
+  const [isMounted, setIsMounted] = useState(false);
+
+
+
+  const router = useRouter();
+//navbar
+  const [activeButton, setActiveButton] = useState(null);
+  const handleButtonClick = (button) => {
+    setActiveButton(button);
+  };
+
+  //Scatter Component
+  ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
+  const options = {
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+  };
+
+  const data = {
+    datasets: [
+      {
+        label: 'Residential Buildings',
+        data: Array.from({ length: 100 }, () => ({
+          x: faker.datatype.number({ min: 0, max: 100 }),
+          y: faker.datatype.number({ min: 0, max: 100 }),
+        })),
+        backgroundColor: '#000000',
+      },
+      {
+        label: 'Offices & Laboratoies',
+        data: Array.from({ length: 100 }, () => ({
+          x: faker.datatype.number({ min: 0, max: 100 }),
+          y: faker.datatype.number({ min: 0, max: 100 }),
+        })),
+        backgroundColor: '#309CFF',
+      },
+      {
+        label: 'Industrial Building',
+        data: Array.from({ length: 10 }, () => ({
+          x: faker.datatype.number({ min: 0, max: 100 }),
+          y: faker.datatype.number({ min: 0, max: 100 }),
+        })),
+        backgroundColor: '#ff0000',
+      }
+    ],
+  };
+
+
+
+const Search = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Perform your desired function here with the form data
+    console.log('Form data submitted:', formData.meter);
+    const meterNumber = formData.meter
+    router.push(`/${meterNumber}`)
+    // redirect(`/${meterNumber}`);
+  };
+
+
+    return (
+      <div className={styles.form}>
+      <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            name="meter"
+            value={formData.meter}
+            onChange={handleInputChange}
+            placeholder='Enter Meter Number'
+          />
+        <button type="submit">Submit</button>
+      </form>
+      </div>
+    );
+  }
+
+  if (!isConnected)
+    return (
+      <main className={styles.main}>
+        <div>
+          <ConnectButton
+          label="Connect Wallet"
+          accountStatus="address"
+          chainStatus="none"
+          showBalance={false}
+        />
+        </div>
+
+      </main>
+    );
+
+
+
   return (
     <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+      <nav className={styles.navBar}>
+        <button
+          className={activeButton === 'button1' ? 'active' : ''}
+          onClick={() => handleButtonClick('button1')}
+        >
+          Explore
+        </button>
+        <button
+          className={activeButton === 'button2' ? 'active' : ''}
+          onClick={() => handleButtonClick('button2')}
+        >
+          Search
+        </button>
+        <style jsx>{`
+          button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #309cff;
+            border: none;
+            cursor: pointer;
+            border-radius: 30px;
+          }
+          button.active {
+            color: #309CFF;
+            background-color: white;
+            height: 40px;
+            width: 150px;
+            margin: 5px;
+
+          }
+        `}</style>
+      </nav>
+
+      <div className={styles.graph}>
+        {/* <Scatter options={options} data={data} width={800} height={300} /> */}
       </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+      <div>
+        <Search />
       </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+          
     </main>
   )
 }
