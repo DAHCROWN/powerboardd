@@ -1,4 +1,4 @@
-export const db = {};
+let db = {};
 const powerHistoryDB = {}
 const childrenDB = {}
 

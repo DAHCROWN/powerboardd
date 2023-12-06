@@ -17,6 +17,7 @@ import { faker } from "@faker-js/faker";
 import Image from "next/image";
 import db_query from  "../../helpers/db"
 import { PostData } from "../../helpers/fetch"
+import {db } from "../../helpers/db"
 
 
 export default function Page({ params }) {
@@ -92,20 +93,13 @@ export default function Page({ params }) {
     });
   }, []);
 
-  while(true){
-    (function logEveryTwoSeconds() {
-      const meter_id = params.meter
-      const res = db_query(meter_id)
-      console.log("fetched", res)
-      const childNodes = res.childNodes
-      const powerConsumption = res.con_current * res.con_voltage
-      const powerGeneration = res.gen_current * res.gen_voltage
-      const netPower = powerGeneration - powerConsumption;
-      setTimeout(logEveryTwoSeconds, 5000);
-    })();
-  }
-  
-
+  const meter_id = params.meter
+  const res = db_query(meter_id)
+  console.log("fetched", res)
+  const childNodes = res.childNodes
+  const powerConsumption = res.con_current * res.con_voltage
+  const powerGeneration = res.gen_current * res.gen_voltage
+  const netPower = powerGeneration - powerConsumption;
 
 
   return (
