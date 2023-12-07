@@ -20,23 +20,10 @@ import { PostData } from "../../../helpers/fetch"
 import {db } from "../../../helpers/db"
 import { revalidatePath } from 'next/cache'
 import { usePathname } from 'next/navigation'
+import {UpdateDBValues} from '../../../helpers/fetch'
 
 export default function Page({ params }) {
   console.log("params:", params);
-  const meterDetails = {
-    id: params.slug,
-    registeredName: "",
-    location: {
-      log: 23,
-      lat: 45,
-    },
-    parentNode: "",
-    childNodes: [],
-    currentDraw: 56,
-    voltageDraw: 45,
-    consumptionHIstory: "",
-    ProductionHistory: "",
-  };
 
   ChartJS.register(
     CategoryScale,
@@ -48,54 +35,9 @@ export default function Page({ params }) {
     Filler,
     Legend
   );
-
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: "bottom",
-      },
-      title: {
-        display: false,
-        text: "Chart.js Line Chart",
-      },
-    },
-  };
-
-  const labels = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-  ];
-  
   const meter = params.meter
-  const data = {
-    labels,
-    datasets: [
-      {
-        fill: true,
-        label: meter,
-        data: labels.map(() => faker.datatype.number({ min: 0, max: 1000 })),
-        borderColor: "rgb(53, 162, 235)",
-        backgroundColor: "rgba(53, 162, 235, 0.5)",
-      },
-    ],
-  };
-
-  
-  // const [meterdata, setMeterData] = useState({});
-
-  function revalidate(){
-    // revalidatePath(`/meters/${params.id}`, 'page')
-    revalidatePath('/meters')
-  }
 
   const [meterdata, setMeterData] = useState({});
-
   const fetchData = async () => {
     try {
       const result = await updateData(params.meter);
@@ -107,8 +49,7 @@ export default function Page({ params }) {
 
   useEffect(() => {
     const intervalId = setInterval(fetchData, 5000); // Fetch data every 5 seconds
-
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, [params.meter]);
 
   async function updateData(id) {
@@ -119,8 +60,7 @@ export default function Page({ params }) {
     return data;
   }
 
-
-  // Moved childNodes, powerConsumption, powerGeneration, and netPower inside the component
+  // compute real time values
   const childNodes = meterdata?.message?.childNodes || [];
   const powerConsumption = meterdata?.message?.con_current * meterdata?.message?.con_voltage;
   const powerGeneration = meterdata?.message?.gen_current * meterdata?.message?.gen_voltage;
@@ -128,7 +68,86 @@ export default function Page({ params }) {
   const current = meterdata?.message?.gen_current - meterdata?.message?.con_current || 0
   const voltage = meterdata?.message?.gen_voltage - meterdata?.message?.con_voltage || 0
 
-  console.log("meter:", meterdata.message)
+  // console.log("meter:", meterdata.message)
+  
+
+
+    //initiate chart js object
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "bottom",
+        },
+        title: {
+          display: false,
+          text: "Chart.js Line Chart",
+        },
+      },
+    };
+
+    const currentDate = new Date();
+    const timestamp = currentDate.getTime();
+
+
+    const [fetchedDataset, setFetchedDataset] = useState([])
+    const [labels, setTimestamps] = useState([])
+    //upload new instance to db
+    const newData = {
+      id: meter,
+      timestamp: [timestamp],
+      props: [netPower],
+      
+    };
+
+    //send real time data to database
+    useEffect(() => {
+      const intervalId = setInterval(() => {
+        UpdateDBValues(newData).then((result) => {
+          // console.log("db returned", result.data.user);
+          setFetchedDataset(result.data.user.netPower);
+          // setTimestamps(result.data.user.timestamp);
+          convertTimestampsToDateTime(result.data.user.timestamp)
+        });
+      }, 5000); // Run every 5 seconds
+    
+      return () => clearInterval(intervalId);
+    }, [newData]); 
+  
+
+    // labels.push(timestamps)
+     //convert timestamps to datatime
+  function convertTimestampsToDateTime(timestamps) {
+    const holder = timestamps.map(timestamp => {
+      const date = new Date(timestamp);
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const seconds = date.getSeconds().toString().padStart(2, '0');
+  
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    });
+    console.log("holder", holder)
+    setTimestamps(holder)
+    
+  }
+    // console.log("label", timeLabel)
+    const data = {
+      labels,
+      datasets: [
+        {
+          fill: true,
+          label: meter,
+          data: fetchedDataset,
+          borderColor: "rgb(53, 162, 235)",
+          backgroundColor: "rgba(53, 162, 235, 0.5)",
+        },
+      ],
+    };
+    console.log("Graph data:", data)
+
   return (
     <div>
       <div className={styles.sides}>
@@ -149,15 +168,15 @@ export default function Page({ params }) {
             <div className={styles.card}>
             <Image src='/voltage.png' width={35} height={35} />
               <div>
-                <h1>{voltage}</h1>
-                <h2>Voltage Draw</h2>
+                <h1>{voltage}(V)</h1>
+                <h2>Net Voltage</h2>
               </div>
             </div>
             <div className={styles.card}>
             <Image src='/current.png' width={35} height={35} />
               <div>
-                <h1>{current}</h1>
-                <h2>Current Draw</h2>
+                <h1>{current}(I)</h1>
+                <h2>Net Current</h2>
               </div>
             </div>
           </div>

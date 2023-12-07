@@ -12,6 +12,15 @@ const formattedDate = currentTime.toISOString().split("T")[0];
 const nextEndTime = currentTime;
 
 
+export async function UpdateDBValues(props){
+    console.log("recieve props:", props)
+    const apiRes = await axios.post(
+        "http://localhost:3000/api/netpower",
+        props
+      );
+    return apiRes
+}
+
 // async function UpdateValues() {
 //   // ***
 //   const contractAddress = "0x2E0175CEA14e6162C5Cb23078e5B8ddD8639ff77";
@@ -32,16 +41,3 @@ const nextEndTime = currentTime;
 //   }
 // }
 
-export async function PostData(){
-    const test_post = {
-        id: 1,
-        gen_current: 2,
-        gen_voltage: 3,
-        con_current: 4,
-        con_voltage: 5
-      }
-      const apiRes = await axios.get(
-        `http://localhost:3000/api/meters?data=${test_post}`
-      );
-      return true
-}
