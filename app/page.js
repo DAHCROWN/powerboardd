@@ -96,7 +96,7 @@ const Search = () => {
     // Perform your desired function here with the form data
     console.log('Form data submitted:', formData.meter);
     const meterNumber = formData.meter
-    router.push(`/${meterNumber}`)
+    router.push(`/meters/${meterNumber}`)
     // redirect(`/${meterNumber}`);
   };
 

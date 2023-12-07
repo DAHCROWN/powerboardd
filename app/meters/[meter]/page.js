@@ -1,6 +1,6 @@
 "use client";
 import styles from "./page.module.css";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,10 +15,11 @@ import {
 import { Line } from "react-chartjs-2";
 import { faker } from "@faker-js/faker";
 import Image from "next/image";
-import db_query from  "../../helpers/db"
-import { PostData } from "../../helpers/fetch"
-import {db } from "../../helpers/db"
-
+import db_query from  "../../../helpers/db"
+import { PostData } from "../../../helpers/fetch"
+import {db } from "../../../helpers/db"
+import { revalidatePath } from 'next/cache'
+import { usePathname } from 'next/navigation'
 
 export default function Page({ params }) {
   console.log("params:", params);
@@ -86,22 +87,48 @@ export default function Page({ params }) {
   };
 
   
+  // const [meterdata, setMeterData] = useState({});
+
+  function revalidate(){
+    // revalidatePath(`/meters/${params.id}`, 'page')
+    revalidatePath('/meters')
+  }
+
+  const [meterdata, setMeterData] = useState({});
+
+  const fetchData = async () => {
+    try {
+      const result = await updateData(params.meter);
+      setMeterData(result);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   useEffect(() => {
-    PostData().then((result) => {
-      console.log("displaying", result);
-    });
-  }, []);
+    const intervalId = setInterval(fetchData, 5000); // Fetch data every 5 seconds
 
-  const meter_id = params.meter
-  const res = db_query(meter_id)
-  console.log("fetched", res)
-  const childNodes = res.childNodes
-  const powerConsumption = res.con_current * res.con_voltage
-  const powerGeneration = res.gen_current * res.gen_voltage
-  const netPower = powerGeneration - powerConsumption;
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+  }, [params.meter]);
+
+  async function updateData(id) {
+    const res = await fetch(`http://localhost:3000/api/meters?id=${id}`);
+    const data = await res.json();
+    setMeterData(data)
+    revalidatePath('/meters'); // Invalidate the data
+    return data;
+  }
 
 
+  // Moved childNodes, powerConsumption, powerGeneration, and netPower inside the component
+  const childNodes = meterdata?.message?.childNodes || [];
+  const powerConsumption = meterdata?.message?.con_current * meterdata?.message?.con_voltage;
+  const powerGeneration = meterdata?.message?.gen_current * meterdata?.message?.gen_voltage;
+  const netPower = powerGeneration - powerConsumption || 0
+  const current = meterdata?.message?.gen_current - meterdata?.message?.con_current || 0
+  const voltage = meterdata?.message?.gen_voltage - meterdata?.message?.con_voltage || 0
+
+  console.log("meter:", meterdata.message)
   return (
     <div>
       <div className={styles.sides}>
@@ -122,14 +149,14 @@ export default function Page({ params }) {
             <div className={styles.card}>
             <Image src='/voltage.png' width={35} height={35} />
               <div>
-                <h1>{res.con_current}</h1>
+                <h1>{voltage}</h1>
                 <h2>Voltage Draw</h2>
               </div>
             </div>
             <div className={styles.card}>
             <Image src='/current.png' width={35} height={35} />
               <div>
-                <h1>{res.con_voltage}</h1>
+                <h1>{current}</h1>
                 <h2>Current Draw</h2>
               </div>
             </div>
