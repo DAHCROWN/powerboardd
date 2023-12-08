@@ -5,6 +5,7 @@ import UsageProperties from "@/models/powerUsage";
 import { revalidatePath } from 'next/cache'
 
 export default async function handler(req, res) {
+try {
   connectDB().catch((err) => res.json(err));
   if (req.method == "GET") {
     const { id } = req.query;
@@ -45,4 +46,8 @@ export default async function handler(req, res) {
   }
 
   res.status(200).json({ message: "Hello from Next.js!" });
+} catch (error) {
+  console.error('Error:', error)
+  res.status(500).json({ error: 'Internal Server Error' });
+}
 }
