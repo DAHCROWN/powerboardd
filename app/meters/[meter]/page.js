@@ -109,7 +109,7 @@ export default function Page({ params }) {
         // setTimestamps(result.data.user.timestamp);
         convertTimestampsToDateTime(result.data.user.timestamp);
       });
-    }, 10000); // Run every 5 seconds
+    }, 5000); // Run every 5 seconds
     return () => clearInterval(intervalId);
   }, [newData]);
 
@@ -176,22 +176,45 @@ export default function Page({ params }) {
             <div className={styles.card}>
               <Image src="/power.png" width={35} height={35} />
               <div>
-                <h1>{netPower}W</h1>
-                <h2>Net Power</h2>
+                <h1>{powerGeneration.toFixed(2)}W</h1>
+                <h2>Power Generation</h2>
               </div>
             </div>
             <div className={styles.card}>
               <Image src="/voltage.png" width={35} height={35} />
               <div>
-                <h1>{voltage}(V)</h1>
-                <h2>Net Voltage</h2>
+                <h1>{meterdata?.message?.gen_voltage.toFixed(2)}(V)</h1>
+                <h2>Genenration Voltage</h2>
               </div>
             </div>
             <div className={styles.card}>
               <Image src="/current.png" width={35} height={35} />
               <div>
-                <h1>{current}(I)</h1>
-                <h2>Net Current</h2>
+                <h1>{meterdata?.message?.gen_current.toFixed(2)}(I)</h1>
+                <h2>Generation Current</h2>
+              </div>
+            </div>
+          </div>
+          <div className={styles.grid}>
+            <div className={styles.card}>
+              <Image src="/power.png" width={35} height={35} />
+              <div>
+                <h1>{powerConsumption.toFixed(2)}W</h1>
+                <h2>Power Consumption</h2>
+              </div>
+            </div>
+            <div className={styles.card}>
+              <Image src="/voltage.png" width={35} height={35} />
+              <div>
+                <h1>{meterdata?.message?.con_voltage.toFixed(2)}(V)</h1>
+                <h2>Consumption Voltage</h2>
+              </div>
+            </div>
+            <div className={styles.card}>
+              <Image src="/current.png" width={35} height={35} />
+              <div>
+                <h1>{meterdata?.message?.con_current.toFixed(2)}(I)</h1>
+                <h2>Consumption Current</h2>
               </div>
             </div>
           </div>
